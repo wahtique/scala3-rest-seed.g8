@@ -3,14 +3,6 @@ import Dependencies._
 ThisBuild / organization := "$organization;format="lower,package"$"
 ThisBuild / scalaVersion := "3.3.1"
 
-lazy val `$name;format="norm"$` =
-  project
-    .in(file("."))
-    .settings(name := "$name$")
-    .settings(commonSettings)
-    .settings(autoImportSettings)
-    .settings(dependencies)
-
 lazy val commonSettings = {
   lazy val commonScalacOptions = Seq(
     Compile / console / scalacOptions := {
@@ -53,15 +45,48 @@ lazy val autoImportSettings = Seq(
     ).mkString(start = "-Yimports:", sep = ",", end = ""),
 )
 
-lazy val dependencies = Seq(
-  libraryDependencies ++= Seq(
-    // main dependencies
+val commonDependencies = Seq(
+  librayDependencies ++= Seq(
+    org.typelevel.catsEffect
   ),
   libraryDependencies ++= Seq(
-    com.eed3si9n.expecty.expecty,
-    org.scalacheck.scalacheck,
-    org.scalameta.`munit-scalacheck`,
-    org.scalameta.munit,
-    org.typelevel.`discipline-munit`,
-  ).map(_ % Test),
+    org.scalameta.munit, // test framework
+    org.scalacheck.scalacheck, // property testing
+    org.scalameta.munitScalacheck, // scalacheck <-> munit
+    org.typelevel.munitCatsEffect, // cats-effect <-> munit
+    org.typelevel.scalacheckEffect // cats-effect <-> scalacheck
+  ).map(_ % Test)
 )
+
+lazy val core =
+  project
+    .in(file("modules/core"))
+    .settings(commonSettings)
+    .settings(autoImportSettings)
+    .settings(commonDependencies)
+
+lazy val api =
+  project
+    .in(file("modules/api"))
+    .settings(commonSettings)
+    .settings(autoImportSettings)
+    .settings(commonDependencies)
+    .settings(
+      libraryDependencies ++= Seq(
+        com.softwaremill.sttp.tapir.tapirCore, // tapir api definition
+        com.softwaremill.sttp.tapir.tapirJsonPickler // tapir experimental json module
+      )
+    )
+
+lazy val server =
+  project
+    .in(file("modules/server"))
+    .settings(commonSettings)
+    .settings(autoImportSettings)
+    .settings(commonDependencies)
+    .settings(
+      libraryDependencies ++= Seq(
+        com.softwaremill.sttp.tapir.tapirHttp4sServer // tapir http4s backend
+      )
+    )
+
